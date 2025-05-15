@@ -1,73 +1,115 @@
-import { Table } from "antd";
+import { Avatar, Table } from "antd";
 import DashboardLayout from "../components/layout";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import axios from "axios";
+// import { API_URL } from "./addproductpage";
+import SummaryCard from "../components/summarycard";
+import { MdDelete } from "react-icons/md";
+
+import { BsFillBasketFill } from "react-icons/bs";
+import { Link } from "react-router-dom";
+import { API_URL } from "./addproductpage";
+
+export const IMAGE_URL = import.meta.env.VITE_FILE_URL
 
 
+const Productspage = () => {
 
+    const [product, setProduct] = useState([])
 
-
-const  Productspage = () => {
+    const fetchAllProduct = async () => {
+        try {
+            const { data } = await axios.get(`${API_URL}/all/product`)
+            console.log(data)
+            setProduct(data.message)
+        } catch (error) {
+            toast.error(error.response.data.message)
+        }
+    }
 
     const columns = [
         {
-            title:"S/NO",
-            dataIndex:"no",
-            key:"no"
+            title: "S/NO",
+            dataIndex: "no",
+            key: "no"
         },
         {
-            title:"Product Name",
-            dataIndex:"product_name",
-            key:"product_name"
+            title: "Product Image",
+            dataIndex: "image",
+            key: "image"
         },
         {
-            title:"Product Price",
-            dataIndex:"product_price",
-            key:"productprice"
+            title: "Product Name",
+            dataIndex: "product_name",
+            key: "product_name"
         },
         {
-            title:"Product Description",
-            dataIndex:"product_description",
-            key:"product_description"
+            title: "Product Price",
+            dataIndex: "product_price",
+            key: "productprice"
         },
         {
-            title:"Product Quantity",
-            dataIndex:"product_quantity",
-            key:"product_quantity"
+            title: "Product Description",
+            dataIndex: "product_description",
+            key: "product_description"
         },
         {
-            title:"Action",
-            dataIndex:"action",
-            key:"action"
+            title: "Product Quantity",
+            dataIndex: "product_quantity",
+            key: "product_quantity"
+        },
+        {
+            title: "Action",
+            dataIndex: "action",
+            key: "action"
         }
+        
     ]
 
-    const dataSource = [
-        {
-            no:1,
-            key:1,
-            product_name:"Ring",
-            product_price:100000,
-            product_description:"iiiiii",
-            product_quantity:"10gram",
-            action: <button>View</button>
 
-        },
-        {
-            no:2,
-            key:2,
-            product_name:"Necklace",
-            product_price:1000000,
-            product_description:"demure",
-            product_quantity:"20gram",
-            action: <button>View</button>
 
-        }
-    ]
+    useEffect(() => {
+        fetchAllProduct()
+    }, [])
 
-  return (
-    <DashboardLayout>
-        <Table dataSource={dataSource} columns={columns} />
-    </DashboardLayout>
-  )
+    return (
+        <DashboardLayout>
+
+
+            <div className="my-5">
+                <SummaryCard 
+                    title={"Products"} 
+                    subtitle={"Available Products"} 
+                    count={product.length} 
+                    icon={<BsFillBasketFill size={40}/>} 
+                />
+            </div>
+
+
+            <Table dataSource={product.map((product, index) => (
+                {
+                    no: index + 1,
+                    key: index,
+                    product_name: product.product_name,
+                    product_price: product.product_price,
+                    product_description: product.product_description,
+                    product_quantity: product.product_quantity,
+                    image: <Avatar src={`${IMAGE_URL}/${product.product_image}`} /> ,
+
+                    action:(
+                        <div className="flex items-center gap-2">
+                            <Link to={`/view/product/${product.product_id}`}>View </Link>
+                            <Link to={`/delete/product/${product.product_id}`}><MdDelete className="text-red-500" /> </Link>
+                        </div>
+                        
+                    ) 
+                    
+                }
+
+            ))} columns={columns} />
+        </DashboardLayout>
+    )
 }
 
 export default Productspage

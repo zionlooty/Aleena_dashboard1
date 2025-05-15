@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { Input, Select } from 'antd'
 import axios from "axios"
 
+export const API_URL = import.meta.env.VITE_API
 
 const Addproductpage = () => {
 
@@ -18,7 +19,8 @@ const Addproductpage = () => {
         quantity: "",
         image: "",
         category: "",
-        tag: ""
+        tag: "",
+        discount_type: ""
     })
 
     const handleChange = (e) => {
@@ -41,6 +43,7 @@ const Addproductpage = () => {
 
     const addNewProduct = async (e) => {
         e.preventDefault()
+        // console.log("Category being sent:", product.discount)
         try {
 
             const formData = new FormData()
@@ -54,18 +57,19 @@ const Addproductpage = () => {
             formData.append("discount_type", product.discount)
             formData.append("product_category", product.category)
             formData.append("product_tag", product.tag)
-            
 
-            const res = await axios.post("http://localhost:5000/new/product", formData, {
+
+            const res = await axios.post(`${API_URL}/new/product`, formData, {
                 headers: {
                     "Content-Type": "multipart/form-data"
                 }
             })
             toast.success(res.data.message)
         } catch (error) {
-            console.log(error)
             toast.error(error.response.data.message)
-           
+            // toast.error(error.response.data.errors.map(err => err.msg).join(", "))
+
+
         }
     }
 
@@ -128,12 +132,12 @@ const Addproductpage = () => {
 
                                     <div className='flex flex-col gap-2 mb-4'>
                                         <h2 className='text-gray-500'>Discount Percentage(%)</h2>
-                                        <Input type="text" className='w-[300px] p-2 border rounded-md  text-black outline-none' onChange={handleChange} name='discount' />
+                                        <Input type="text" className='w-[300px] p-2 border rounded-md  text-black outline-none' onChange={handleChange} name='percentage' />
                                     </div>
                                     <div className='flex flex-col gap-2 mb-4'>
                                         <h2 className='text-gray-500'>Discount Type</h2>
                                         <Select name="category" id="category" placeholder='Select a discount type' className='w-[300px] p-2 border rounded-md bg-blue-200 text-black outline-none'
-                                            onChange={(value) => { setProduct({ ...product, discount_type: value }) }}
+                                            onChange={(value) => { setProduct({ ...product, discount: value }) }}
                                             options={[
                                                 { value: "promo", label: "promo" },
                                                 { value: "black friday", label: "black friday" }
@@ -177,7 +181,7 @@ const Addproductpage = () => {
                             {
                                 previewUrl ?
                                     <div className="flex flex-col justify-center items-center w-[100px] h-[100px] gap-3 cursor-pointer overflow-hidden">
-
+                                            
                                         <img src={URL.createObjectURL(previewUrl)} alt="" />
 
                                     </div>
@@ -199,18 +203,21 @@ const Addproductpage = () => {
 
                             <div className='flex flex-col gap-2 mb-4'>
                                 <h2 className='text-gray-500'>Product Category</h2>
-                                <Select name="category" id="category"  className='w-[300px] p-2 border rounded-md bg-blue-200 text-black outline-none' onChange={(value) => { setProduct({ ...product, category: value }) }}
+                                <Select name="category" id="category" className='w-[300px] p-2 border rounded-md bg-blue-200 text-black outline-none' onChange={(value) => { setProduct({ ...product, category: value }) }}
                                     options={[
+                                        // { value: "jewelries", label: "jewelries" },
+                                        // { value: "clothes", label: "clothes" },
+                                        // {value:"fashion", lablel:"fashion"},
                                         { value: "jewelries", label: "jewelries" },
                                         { value: "clothes", label: "clothes" },
-                                        // {value:"fashion", lablel:"fashion"},
-                                    ]}
-                                ></Select>
+                                        // { value: "electronics", label: "Electronics" },
+                                        // { value: "fashion", label: "Fashion" },
+                                    ]}></Select>
                             </div>
 
                             <div className='flex flex-col gap-2'>
                                 <h2 className='text-gray-500'>Product Tag</h2>
-                                <Select name="Product Tag" id="Product Tag"  className='w-[300px] p-2 border rounded-md bg-blue-200 text-black outline-none'
+                                <Select name="Product Tag" id="Product Tag" className='w-[300px] p-2 border rounded-md bg-blue-200 text-black outline-none'
                                     onChange={(value) => { setProduct({ ...product, tag: value }) }}
                                     options={[
                                         { value: "earing", lablel: "earing" },
@@ -225,7 +232,7 @@ const Addproductpage = () => {
                 </article>
                 <div className='mt-5 flex items-center justify-center'>
 
-                <input type="submit" value="Add new product" className='w-[200px] py-2 px-5 bg-blue-500 text-white rounded-md cursor-pointer' />
+                    <input type="submit" value="Add new product" className='w-[200px] py-2 px-5 bg-blue-500 text-white rounded-md cursor-pointer' />
                 </div>
             </form>
 

@@ -8,6 +8,7 @@ import Adspage from "./pages/ads"
 import Adminpage from "./pages/admin"
 import Refundpage from "./pages/refund"
 import Addproductpage from "./pages/addproductpage"
+import ViewPage from "./pages/view"
 
 function App() {
   
@@ -25,6 +26,7 @@ function App() {
       <Route path="/admin" element={<Adminpage/>}/>
       <Route path="/refund" element={<Refundpage/>}/>
       <Route path="/addproduct" element={<Addproductpage/>}/>
+      <Route path="/view/product/:prodID" element={<ViewPage/>}/>
     </Routes>
     
     
