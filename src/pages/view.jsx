@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import DashboardLayout from '../components/layout'
-import axios from 'axios'
-import { API_URL } from './addproductpage'
+import { apiService } from '../services/apiService'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { IMAGE_URL } from './product'
 import { Button, Input, Modal, Select } from 'antd'
-import { MdOutlineDoorbell } from 'react-icons/md'
+import { MdNotifications } from 'react-icons/md'
 import { IoIosHeart, IoLogoFacebook } from 'react-icons/io'
 import { FaPinterestP, FaShareFromSquare, FaTwitter } from 'react-icons/fa6'
 import { AiOutlineGooglePlus } from 'react-icons/ai'
@@ -21,8 +20,8 @@ const ViewPage = () => {
 
     const getSingProduct = async () => {
         try {
-            const { data } = await axios.get(`${API_URL}/product/${prodID}`)
-            setProduct(data.message)
+            const response = await apiService.getProduct(prodID)
+            setProduct(response.data.message)
             // console.log((parseInt(data.message.discount_percentage) / parseInt(data.message.product_price)) * 100)
             // setDiscount((parseInt(data.message.discount_percentage) / parseInt(data.message.product_price)) * 100)
         } catch (error) {
@@ -83,7 +82,7 @@ const ViewPage = () => {
 
           <div className="mb-8 flex gap-2">
             <div className="flex items-center bg-black text-white justify-center gap-2 w-50 py-3 px-6 border">
-              <Link to={'/'}><MdOutlineDoorbell /></Link>
+              <Link to={'/'}><MdNotifications /></Link>
               <button>BUY NOW</button>
             </div>
             <div className="w-15  border-[1.5px] border-black border-solid text-center items-center flex justify-center  p-3">
