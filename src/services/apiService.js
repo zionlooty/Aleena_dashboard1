@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { toast } from 'sonner';
 
-const API_URL = import.meta.env.VITE_API || 'http://localhost:8888';
+const API_URL = import.meta.env.VITE_API || 'http://localhost:9000';
 
 // Create axios instance with default config
 const api = axios.create({
@@ -56,6 +56,7 @@ export const apiService = {
     getUserAnalytics: () => api.get('/analytics/users'),
     getOrderAnalytics: () => api.get('/analytics/orders'),
     getRevenueAnalytics: (period = 'monthly') => api.get(`/analytics/revenue?period=${period}`),
+    getTodaysOrdersTest: () => api.get('/analytics/today-orders'),
 
     // Admin management endpoints
     getAllAdmins: () => api.get('/admin/all'),
@@ -94,6 +95,14 @@ export const apiService = {
     getAllPromotions: () => api.get('/promotions/all'),
     createPromotion: (promoData) => api.post('/promotions/create', promoData),
     validatePromoCode: (promoCode, orderAmount) => api.post('/promotions/validate', { promo_code: promoCode, order_amount: orderAmount }),
+
+    // Admin authentication
+    logout: () => {
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminUser');
+        // Clear any other admin-related data
+        return Promise.resolve();
+    },
 
     // Refunds management endpoints
     getAllRefunds: () => api.get('/refunds/all'),

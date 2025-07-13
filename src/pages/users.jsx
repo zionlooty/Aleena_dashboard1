@@ -146,7 +146,7 @@ const UserPage = () => {
                     >
                         View
                     </Button>
-                    <Button
+                    {/* <Button
                         type="default"
                         icon={<EditOutlined />}
                         size="small"
@@ -161,7 +161,7 @@ const UserPage = () => {
                         onClick={() => handleDeleteUser(record.user_id)}
                     >
                         Delete
-                    </Button>
+                    </Button> */}
                 </Space>
             )
         }

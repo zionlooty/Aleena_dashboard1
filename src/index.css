@@ -90,4 +90,14 @@
   }
 }
 
+/* Suppress Ant Design React compatibility warnings */
+.ant-message-warning,
+.ant-notification-notice-warning {
+  display: none !important;
+}
 
+/* Hide warning overlays that might contain compatibility messages */
+div[class*="warning"]:has-text("antd"),
+div[class*="message"]:has-text("React is 16") {
+  display: none !important;
+}

@@ -27,16 +27,20 @@ const Adminpage = () => {
     }, []);
 
     const fetchAdmins = async () => {
+        console.log("📊 Fetching admins...");
         setLoading(true);
         try {
             const response = await apiService.getAllAdmins();
+            console.log("📊 Admins response:", response);
             if (response.data.message) {
                 setAdmins(response.data.message);
                 calculateStats(response.data.message);
+                console.log("✅ Admins loaded:", response.data.message.length, "admins");
             }
         } catch (error) {
-            toast.error('Failed to fetch admins');
-            console.error('Error fetching admins:', error);
+            console.error('❌ Error fetching admins:', error);
+            console.error('❌ Error response:', error.response?.data);
+            toast.error(error.response?.data?.message || 'Failed to fetch admins');
         } finally {
             setLoading(false);
         }
@@ -52,14 +56,30 @@ const Adminpage = () => {
     };
 
     const handleCreateAdmin = async (values) => {
+        console.log("🔧 Creating admin with values:", values);
+
+        // Validate required fields
+        if (!values.role) {
+            toast.error('Please select a role');
+            return;
+        }
+        if (!values.status) {
+            toast.error('Please select a status');
+            return;
+        }
+
         try {
-            await apiService.createAdmin(values);
+            const response = await apiService.createAdmin(values);
+            console.log("✅ Admin creation response:", response);
             toast.success('Admin created successfully');
             setModalVisible(false);
             form.resetFields();
             fetchAdmins();
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to create admin');
+            console.error("❌ Admin creation error:", error);
+            console.error("❌ Error response:", error.response?.data);
+            const errorMessage = error.response?.data?.message || 'Failed to create admin';
+            toast.error(errorMessage);
         }
     };
 
@@ -87,9 +107,12 @@ const Adminpage = () => {
     };
 
     const openModal = (admin = null) => {
+        console.log("🔧 Opening modal for admin:", admin);
         setEditingAdmin(admin);
         setModalVisible(true);
+
         if (admin) {
+            // Editing existing admin
             form.setFieldsValue({
                 fullname: admin.fullname,
                 email: admin.email,
@@ -97,8 +120,17 @@ const Adminpage = () => {
                 role: admin.role,
                 status: admin.status
             });
+            console.log("📝 Form values set for editing:", {
+                fullname: admin.fullname,
+                email: admin.email,
+                mobile: admin.mobile,
+                role: admin.role,
+                status: admin.status
+            });
         } else {
+            // Creating new admin - completely reset form without defaults
             form.resetFields();
+            console.log("📝 Form completely reset for new admin - no defaults set");
         }
     };
 
@@ -289,17 +321,25 @@ const Adminpage = () => {
                     title={editingAdmin ? 'Edit Admin' : 'Create New Admin'}
                     open={modalVisible}
                     onCancel={() => {
+                        console.log("❌ Modal cancelled");
                         setModalVisible(false);
                         setEditingAdmin(null);
                         form.resetFields();
                     }}
                     footer={null}
                     width={600}
+                    destroyOnClose={true}
+                    maskClosable={false}
+                    zIndex={1000}
                 >
                     <Form
                         form={form}
                         layout="vertical"
                         onFinish={editingAdmin ? handleUpdateAdmin : handleCreateAdmin}
+                        onValuesChange={(changedValues, allValues) => {
+                            console.log("📝 Form values changed:", changedValues);
+                            console.log("📝 All form values:", allValues);
+                        }}
                     >
                         <Form.Item
                             name="fullname"
@@ -344,36 +384,78 @@ const Adminpage = () => {
                         <Form.Item
                             name="role"
                             label="Role"
-                            rules={[{ required: true, message: 'Please select role' }]}
+                            rules={[{ required: true, message: 'Please select a role' }]}
                         >
-                            <Select placeholder="Select role">
-                                <Option value="admin">Admin</Option>
-                                <Option value="super_admin">Super Admin</Option>
-                                <Option value="moderator">Moderator</Option>
-                            </Select>
+                            <select
+                                placeholder="Click to select role"
+                                style={{ width: '100%' }}
+                                size="large"
+                                onChange={(value) => {
+                                    console.log("🔄 Role changed to:", value);
+                                }}
+                                onDropdownVisibleChange={(open) => {
+                                    console.log("📋 Role dropdown", open ? "opened" : "closed");
+                                }}
+                            >
+                                <option value="admin">Admin</option>
+                                <option value="super_admin">Super Admin</option>
+                                <option value="moderator">Moderator</option>
+                            </select>
                         </Form.Item>
 
                         <Form.Item
                             name="status"
                             label="Status"
-                            rules={[{ required: true, message: 'Please select status' }]}
+                            rules={[{ required: true, message: 'Please select a status' }]}
                         >
-                            <Select placeholder="Select status">
-                                <Option value="active">Active</Option>
-                                <Option value="inactive">Inactive</Option>
-                            </Select>
+                            <select
+                                placeholder="Click to select status"
+                                style={{ width: '100%' }}
+                                size="large"
+                                onChange={(value) => {
+                                    console.log("🔄 Status changed to:", value);
+                                }}
+                                onDropdownVisibleChange={(open) => {
+                                    console.log("📋 Status dropdown", open ? "opened" : "closed");
+                                }}
+                            >
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
                         </Form.Item>
 
                         <Form.Item className="mb-0 flex justify-end">
                             <Space>
                                 <Button onClick={() => {
+                                    console.log("❌ Modal cancelled");
                                     setModalVisible(false);
                                     setEditingAdmin(null);
                                     form.resetFields();
                                 }}>
                                     Cancel
                                 </Button>
-                                <Button type="primary" htmlType="submit">
+                                <Button
+                                    type="primary"
+                                    htmlType="submit"
+                                    onClick={() => {
+                                        // Additional validation before form submission
+                                        const values = form.getFieldsValue();
+                                        console.log("🔍 Current form values before submit:", values);
+
+                                        if (!values.role) {
+                                            console.error("❌ No role selected");
+                                            toast.error('Please select a role');
+                                            return false;
+                                        }
+                                        if (!values.status) {
+                                            console.error("❌ No status selected");
+                                            toast.error('Please select a status');
+                                            return false;
+                                        }
+
+                                        console.log("✅ Pre-submit validation passed");
+                                    }}
+                                >
                                     {editingAdmin ? 'Update' : 'Create'}
                                 </Button>
                             </Space>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Avatar, Table, Button, Input, Space, Tag, Card, Row, Col, Statistic, Modal, Select, Image } from "antd";
+import { Avatar, Table, Button, Input, Space, Tag, Card, Row, Col, Statistic, Modal, Select, Image, Form, InputNumber } from "antd";
 import { SearchOutlined, EditOutlined, DeleteOutlined, EyeOutlined, PlusOutlined } from '@ant-design/icons';
 import { MdDelete, MdEdit, MdInventory, MdTrendingUp, MdWarning } from "react-icons/md";
 import { BsFillBasketFill } from "react-icons/bs";
@@ -17,8 +17,12 @@ const Productspage = () => {
     const [loading, setLoading] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [isModalVisible, setIsModalVisible] = useState(false);
+    const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+    const [editingProduct, setEditingProduct] = useState(null);
+    const [isUpdating, setIsUpdating] = useState(false);
     const [searchText, setSearchText] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('all');
+    const [form] = Form.useForm();
     const [stats, setStats] = useState({
         total: 0,
         lowStock: 0,
@@ -71,6 +75,94 @@ const Productspage = () => {
     const handleViewProduct = (product) => {
         setSelectedProduct(product);
         setIsModalVisible(true);
+    };
+
+    const handleEditProduct = (product) => {
+        setEditingProduct(product);
+        form.setFieldsValue({
+            product_name: product.product_name,
+            product_description: product.product_description,
+            product_price: product.product_price,
+            product_quantity: product.product_quantity,
+            product_category: product.product_category,
+            product_tag: product.product_tag,
+            discount_percentage: product.discount_percentage
+        });
+        setIsEditModalVisible(true);
+    };
+
+    const handleUpdateProduct = async (values) => {
+        if (isUpdating) return; // Prevent multiple submissions
+
+        setIsUpdating(true);
+        try {
+            console.log("🔄 Updating product with values:", values);
+            console.log("🔄 Product ID:", editingProduct.product_id);
+
+            // Validate required fields
+            if (!values.product_name || values.product_name.trim() === '') {
+                toast.error('Product name is required');
+                return;
+            }
+
+            if (!values.product_description || values.product_description.trim() === '') {
+                toast.error('Product description is required');
+                return;
+            }
+
+            if (!values.product_price || values.product_price <= 0) {
+                toast.error('Product price must be greater than 0');
+                return;
+            }
+
+            if (values.product_quantity === null || values.product_quantity === undefined || values.product_quantity < 0) {
+                toast.error('Product quantity must be 0 or greater');
+                return;
+            }
+
+            if (!values.product_category || values.product_category.trim() === '') {
+                toast.error('Product category is required');
+                return;
+            }
+
+            // Clean up the values
+            const cleanValues = {
+                product_name: values.product_name.trim(),
+                product_description: values.product_description.trim(),
+                product_price: Number(values.product_price),
+                product_quantity: Number(values.product_quantity),
+                product_category: values.product_category.trim(),
+                product_tag: values.product_tag ? values.product_tag.trim() : '',
+                discount_percentage: values.discount_percentage ? Number(values.discount_percentage) : 0
+            };
+
+            console.log("🔄 Clean values:", cleanValues);
+
+            const response = await apiService.updateProduct(editingProduct.product_id, cleanValues);
+            console.log("✅ Update response:", response);
+
+            toast.success('Product updated successfully');
+            setIsEditModalVisible(false);
+            setEditingProduct(null);
+            form.resetFields();
+            fetchAllProduct();
+        } catch (error) {
+            console.error("❌ Update error:", error);
+            console.error("❌ Error response:", error.response?.data);
+
+            const errorMessage = error.response?.data?.message ||
+                                error.response?.data?.error ||
+                                'Failed to update product';
+            toast.error(errorMessage);
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const handleCancelEdit = () => {
+        setIsEditModalVisible(false);
+        setEditingProduct(null);
+        form.resetFields();
     };
 
     const getStockStatus = (quantity) => {
@@ -158,15 +250,14 @@ const Productspage = () => {
                     >
                         View
                     </Button>
-                    <Link to={`/view/product/${record.product_id}`}>
-                        <Button
-                            type="default"
-                            icon={<EditOutlined />}
-                            size="small"
-                        >
-                            Edit
-                        </Button>
-                    </Link>
+                    <Button
+                        type="default"
+                        icon={<EditOutlined />}
+                        size="small"
+                        onClick={() => handleEditProduct(record)}
+                    >
+                        Edit
+                    </Button>
                     <Button
                         type="primary"
                         danger
@@ -351,6 +442,141 @@ const Productspage = () => {
                             </div>
                         </div>
                     )}
+                </Modal>
+
+                {/* Edit Product Modal */}
+                <Modal
+                    title="Edit Product"
+                    open={isEditModalVisible}
+                    onCancel={handleCancelEdit}
+                    footer={null}
+                    width={600}
+                    destroyOnClose={true}
+                >
+                    <Form
+                        form={form}
+                        layout="vertical"
+                        onFinish={handleUpdateProduct}
+                        className="space-y-4"
+                    >
+                        <Form.Item
+                            name="product_name"
+                            label="Product Name"
+                            rules={[
+                                { required: true, message: 'Please enter product name' },
+                                { min: 2, message: 'Product name must be at least 2 characters' },
+                                { max: 100, message: 'Product name must be less than 100 characters' }
+                            ]}
+                        >
+                            <Input placeholder="Enter product name" />
+                        </Form.Item>
+
+                        <Form.Item
+                            name="product_description"
+                            label="Description"
+                            rules={[
+                                { required: true, message: 'Please enter product description' },
+                                { min: 10, message: 'Description must be at least 10 characters' },
+                                { max: 500, message: 'Description must be less than 500 characters' }
+                            ]}
+                        >
+                            <Input.TextArea
+                                rows={3}
+                                placeholder="Enter product description"
+                            />
+                        </Form.Item>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <Form.Item
+                                name="product_price"
+                                label="Price (₦)"
+                                rules={[
+                                    { required: true, message: 'Please enter price' },
+                                    { type: 'number', min: 1, message: 'Price must be greater than 0' }
+                                ]}
+                            >
+                                <InputNumber
+                                    min={1}
+                                    max={10000000}
+                                    style={{ width: '100%' }}
+                                    placeholder="0.00"
+                                    formatter={value => `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                                    parser={value => value.replace(/₦\s?|(,*)/g, '')}
+                                />
+                            </Form.Item>
+
+                            <Form.Item
+                                name="product_quantity"
+                                label="Stock Quantity"
+                                rules={[
+                                    { required: true, message: 'Please enter quantity' },
+                                    { type: 'number', min: 0, message: 'Quantity cannot be negative' }
+                                ]}
+                            >
+                                <InputNumber
+                                    min={0}
+                                    max={100000}
+                                    style={{ width: '100%' }}
+                                    placeholder="0"
+                                />
+                            </Form.Item>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <Form.Item
+                                name="product_category"
+                                label="Category"
+                                rules={[
+                                    { required: true, message: 'Please enter category' },
+                                    { min: 2, message: 'Category must be at least 2 characters' },
+                                    { max: 50, message: 'Category must be less than 50 characters' }
+                                ]}
+                            >
+                                <Input placeholder="e.g., Rings, Necklaces" />
+                            </Form.Item>
+
+                            <Form.Item
+                                name="product_tag"
+                                label="Tag"
+                                rules={[
+                                    { max: 50, message: 'Tag must be less than 50 characters' }
+                                ]}
+                            >
+                                <Input placeholder="e.g., Gold, Silver" />
+                            </Form.Item>
+                        </div>
+
+                        <Form.Item
+                            name="discount_percentage"
+                            label="Discount Percentage"
+                            rules={[
+                                { type: 'number', min: 0, max: 100, message: 'Discount must be between 0 and 100' }
+                            ]}
+                        >
+                            <InputNumber
+                                min={0}
+                                max={100}
+                                style={{ width: '100%' }}
+                                placeholder="0"
+                                formatter={value => `${value}%`}
+                                parser={value => value.replace('%', '')}
+                            />
+                        </Form.Item>
+
+                        <div className="flex justify-end gap-3 pt-4">
+                            <Button onClick={handleCancelEdit} disabled={isUpdating}>
+                                Cancel
+                            </Button>
+                            <Button
+                                type="primary"
+                                htmlType="submit"
+                                loading={isUpdating}
+                                disabled={isUpdating}
+                            >
+                                {isUpdating ? 'Updating...' : 'Update Product'}
+                            </Button>
+                        </div>
+                    </Form>
                 </Modal>
             </div>
         </DashboardLayout>

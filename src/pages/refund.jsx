@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Table, Button, Tag, Space, Modal, Form, Input, Select, Card, Row, Col, Statistic, Popconfirm, Descriptions } from "antd";
-import { EyeOutlined, EditOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { EyeOutlined, EditOutlined, CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined } from '@ant-design/icons';
 import { MdAttachMoney, MdPending, MdCheckCircle, MdCancel } from 'react-icons/md';
 import DashboardLayout from "../components/layout";
 import { apiService } from "../services/apiService";
@@ -29,18 +29,56 @@ const Refundpage = () => {
     }, []);
 
     const fetchRefunds = async () => {
+        console.log("📊 Fetching refunds from frontend...");
         setLoading(true);
         try {
             const response = await apiService.getAllRefunds();
+            console.log("📊 Refunds API response:", response);
+
             if (response.data.message) {
                 setRefunds(response.data.message);
                 calculateStats(response.data.message);
+                console.log("✅ Refunds loaded successfully:", response.data.message.length, "records");
+            } else {
+                console.log("⚠️ No refunds data in response");
+                setRefunds([]);
+                calculateStats([]);
             }
         } catch (error) {
-            toast.error('Failed to fetch refunds');
-            console.error('Error fetching refunds:', error);
+            console.error('❌ Error fetching refunds:', error);
+            console.error('❌ Error response:', error.response?.data);
+
+            const errorMessage = error.response?.data?.message || 'Failed to fetch refunds';
+            toast.error(errorMessage);
+
+            // Set empty state on error
+            setRefunds([]);
+            calculateStats([]);
         } finally {
             setLoading(false);
+        }
+    };
+
+    // Test function to check if refunds table exists
+    const testRefundsTable = async () => {
+        try {
+            console.log("🧪 Testing refunds table...");
+            const response = await fetch('/api/refunds/test', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            });
+            const data = await response.json();
+            console.log("🧪 Test result:", data);
+
+            if (data.tableExists) {
+                toast.success(`Refunds table exists with ${data.recordCount} records`);
+            } else {
+                toast.error("Refunds table does not exist");
+            }
+        } catch (error) {
+            console.error("🧪 Test error:", error);
+            toast.error("Failed to test refunds table");
         }
     };
 
@@ -188,6 +226,21 @@ const Refundpage = () => {
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900">Refund Management</h1>
                         <p className="text-gray-600">Manage customer refund requests and process refunds</p>
+                    </div>
+                    <div className="flex gap-3">
+                        <Button
+                            icon={<ReloadOutlined />}
+                            onClick={fetchRefunds}
+                            loading={loading}
+                        >
+                            Refresh
+                        </Button>
+                        <Button
+                            type="dashed"
+                            onClick={testRefundsTable}
+                        >
+                            Test DB
+                        </Button>
                     </div>
                 </div>
 

@@ -18,8 +18,14 @@ const DashboardLayout = ({children}) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
+    // Clear all admin-related data from localStorage
     localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminUser');
+
+    // Show success message
     toast.success('Logged out successfully');
+
+    // Redirect to login page
     navigate('/login');
   };
 
@@ -29,10 +35,10 @@ const DashboardLayout = ({children}) => {
     { path: "/product", icon: FaProductHunt, label: "Products" },
     { path: "/addproduct", icon: FaPlus, label: "Add Products" },
     { path: "/order", icon: MdReceipt, label: "Orders" },
-    // { path: "/refund", icon: MdReplay, label: "Refunds" },
-    // { path: "/promo", icon: MdLocalOffer, label: "Promo" },
-    // { path: "/admin", icon: MdAdminPanelSettings, label: "Admin" },
-    // { path: "/ads", icon: FcAdvertising, label: "Ads" },
+    { path: "/refund", icon: MdReplay, label: "Refunds" },
+    { path: "/promo", icon: MdLocalOffer, label: "Promo" },
+    { path: "/admin", icon: MdAdminPanelSettings, label: "Admin" },
+    { path: "/ads", icon: FcAdvertising, label: "Ads" },
   ];
 
   const isActiveRoute = (path) => {
@@ -83,6 +89,19 @@ const DashboardLayout = ({children}) => {
                             </Link>
                         );
                     })}
+                </div>
+
+                {/* Logout Button in Sidebar */}
+                <div className='mt-6 pt-4 border-t border-gray-200'>
+                    <button
+                        onClick={handleLogout}
+                        className='flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-red-600 hover:bg-red-50 w-full'
+                    >
+                        <MdLogout className='text-lg' />
+                        {!sidebarCollapsed && (
+                            <span className='font-medium text-sm'>Logout</span>
+                        )}
+                    </button>
                 </div>
             </nav>
         </aside>

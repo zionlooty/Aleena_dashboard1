@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import DashboardLayout from '../components/layout'
 import { toast } from 'sonner'
 import { Form, Input, Select, Upload, Button, Card, Row, Col, InputNumber, Progress, Spin, Table, Modal, Space, Popconfirm, Tabs } from 'antd'
+const { Option } = Select
 import { UploadOutlined, SaveOutlined, EyeOutlined, ReloadOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { MdCloudUpload } from 'react-icons/md'
 import { apiService } from "../services/apiService"
@@ -260,46 +261,73 @@ const Addproductpage = () => {
         fetchProducts();
     }, []);
 
-    // Handle edit product
+    // Handle edit product with modal
     const handleEditProduct = (product) => {
-        console.log('Editing product:', product);
+        console.log('🔄 Opening edit modal for:', product.product_name);
+
         setEditingProduct(product);
+
+        // Set form values
         form.setFieldsValue({
             product_name: product.product_name,
             product_description: product.product_description,
             product_price: product.product_price,
-            product_quantity: product.product_quantity
+            product_quantity: product.product_quantity,
+            product_category: product.product_category || '',
+            product_tag: product.product_tag || '',
+            discount_percentage: product.discount_percentage || 0,
+            discount_type: product.discount_type || 'none'
         });
+
         setIsEditModalVisible(true);
+        console.log('✅ Edit modal opened');
     };
 
-    // Handle update product
+    // Handle modal cancel
+    const handleCancelEdit = () => {
+        setIsEditModalVisible(false);
+        setEditingProduct(null);
+        form.resetFields();
+        console.log('❌ Edit modal cancelled');
+    };
+
+    // Handle update product from modal
     const handleUpdateProduct = async (values) => {
+        console.log('🚀 Updating product from modal:', values);
         setLoading(true);
+
         try {
-            // Only send fields that backend supports
             const updateData = {
                 product_name: values.product_name,
-                product_price: values.product_price,
+                product_price: parseFloat(values.product_price),
                 product_description: values.product_description,
-                product_quantity: values.product_quantity
+                product_quantity: parseInt(values.product_quantity),
+                product_category: values.product_category,
+                product_tag: values.product_tag,
+                discount_percentage: parseFloat(values.discount_percentage) || 0,
+                discount_type: values.discount_type || 'none'
             };
 
-            console.log('Updating product with data:', updateData);
+            console.log('📤 Sending update data:', updateData);
+
             const response = await apiService.updateProduct(editingProduct.product_id, updateData);
-            toast.success(response.data.message || 'Product updated successfully!');
+            console.log('✅ Update successful:', response.data);
+
+            toast.success('Product updated successfully!');
             setIsEditModalVisible(false);
             setEditingProduct(null);
             form.resetFields();
-            setImagePreview(null);
             fetchProducts(); // Refresh the products list
+
         } catch (error) {
-            console.error('Update error:', error);
+            console.error('❌ Update failed:', error);
             toast.error(error.response?.data?.message || 'Failed to update product');
         } finally {
             setLoading(false);
         }
     };
+
+
 
     // Handle delete product
     const handleDeleteProduct = async (productId) => {
@@ -314,13 +342,7 @@ const Addproductpage = () => {
         }
     };
 
-    // Cancel edit
-    const handleCancelEdit = () => {
-        setIsEditModalVisible(false);
-        setEditingProduct(null);
-        form.resetFields();
-        setImagePreview(null);
-    };
+
 
 
 
@@ -360,6 +382,8 @@ const Addproductpage = () => {
                         >
                             Test Fetch
                         </Button>
+
+
                     </Space>
                 </div>
 
@@ -383,216 +407,218 @@ const Addproductpage = () => {
 
 
 
-                                    {/* Progress Indicator */}
-                                    {uploadProgress > 0 && uploadProgress < 100 && (
-                                        <Card className="border-0 shadow-sm">
-                                            <Progress percent={uploadProgress} status="active" />
-                                            <p className="text-center mt-2 text-sm text-gray-600">Uploading product...</p>
+                            {/* Progress Indicator */}
+                            {uploadProgress > 0 && uploadProgress < 100 && (
+                                <Card className="border-0 shadow-sm">
+                                    <Progress percent={uploadProgress} status="active" />
+                                    <p className="text-center mt-2 text-sm text-gray-600">Uploading product...</p>
+                                </Card>
+                            )}
+
+                            {/* Product Form */}
+                            <Form
+                                form={form}
+                                layout="vertical"
+                                onFinish={handleSubmit}
+                                onFinishFailed={(errorInfo) => {
+                                    const firstError = errorInfo.errorFields[0];
+                                    if (firstError) {
+                                        toast.error(`${firstError.name[0]}: ${firstError.errors[0]}`);
+                                    }
+                                }}
+                                className="space-y-6"
+                            >
+                                <Row gutter={[24, 24]}>
+                                    {/* Left Column - Main Information */}
+                                    <Col xs={24} lg={16}>
+                                        {/* General Information */}
+                                        <Card title="General Information" className="mb-6 border-0 shadow-sm">
+                                            <Row gutter={16}>
+                                                <Col span={24}>
+                                                    <Form.Item
+                                                        name="product_name"
+                                                        label="Product Name"
+                                                        rules={[{ required: true, message: 'Please enter product name' }]}
+                                                    >
+                                                        <Input
+                                                            placeholder="Enter product name (e.g., Diamond Engagement Ring)"
+                                                            size="large"
+                                                        />
+                                                    </Form.Item>
+                                                </Col>
+                                                <Col span={24}>
+                                                    <Form.Item
+                                                        name="product_description"
+                                                        label="Description"
+                                                        rules={[{ required: true, message: 'Please enter product description' }]}
+                                                    >
+                                                        <Input.TextArea
+                                                            rows={4}
+                                                            placeholder="Describe your product in detail..."
+                                                        />
+                                                    </Form.Item>
+                                                </Col>
+                                            </Row>
                                         </Card>
-                                    )}
 
-                                    {/* Product Form */}
-                                    <Form
-                                        form={form}
-                                        layout="vertical"
-                                        onFinish={handleSubmit}
-                    onFinishFailed={(errorInfo) => {
-                        const firstError = errorInfo.errorFields[0];
-                        if (firstError) {
-                            toast.error(`${firstError.name[0]}: ${firstError.errors[0]}`);
-                        }
-                    }}
-                    className="space-y-6"
-                >
-                    <Row gutter={[24, 24]}>
-                        {/* Left Column - Main Information */}
-                        <Col xs={24} lg={16}>
-                            {/* General Information */}
-                            <Card title="General Information" className="mb-6 border-0 shadow-sm">
-                                <Row gutter={16}>
-                                    <Col span={24}>
-                                        <Form.Item
-                                            name="product_name"
-                                            label="Product Name"
-                                            rules={[{ required: true, message: 'Please enter product name' }]}
-                                        >
-                                            <Input
-                                                placeholder="Enter product name (e.g., Diamond Engagement Ring)"
-                                                size="large"
-                                            />
-                                        </Form.Item>
+                                        {/* Pricing */}
+                                        <Card title="Pricing" className="mb-6 border-0 shadow-sm">
+                                            <Row gutter={16}>
+                                                <Col xs={24} md={12}>
+                                                    <Form.Item
+                                                        name="product_price"
+                                                        label="Base Price (₦)"
+                                                        rules={[{ required: true, message: 'Please enter product price' }]}
+                                                    >
+                                                        <InputNumber
+                                                            placeholder="0.00"
+                                                            size="large"
+                                                            className="w-full"
+                                                            min={0}
+                                                            formatter={value => `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                                                            parser={value => value.replace(/₦\s?|(,*)/g, '')}
+                                                        />
+                                                    </Form.Item>
+                                                </Col>
+                                                <Col xs={24} md={12}>
+                                                    <Form.Item
+                                                        name="product_quantity"
+                                                        label="Quantity"
+                                                        rules={[{ required: true, message: 'Please enter quantity' }]}
+                                                    >
+                                                        <InputNumber
+                                                            placeholder="0"
+                                                            size="large"
+                                                            className="w-full"
+                                                            min={0}
+                                                        />
+                                                    </Form.Item>
+                                                </Col>
+                                                <Col xs={24} md={12}>
+                                                    <Form.Item
+                                                        name="discount_percentage"
+                                                        label="Discount Percentage (%)"
+                                                    >
+                                                        <InputNumber
+                                                            placeholder="0"
+                                                            size="large"
+                                                            className="w-full"
+                                                            min={0}
+                                                            max={100}
+                                                        />
+                                                    </Form.Item>
+                                                </Col>
+                                                <Col xs={24} md={12}>
+                                                    <Form.Item
+                                                        name="discount_type"
+                                                        label="Discount Type"
+                                                    >
+                                                        <CustomSelect
+                                                            placeholder="Select discount type..."
+                                                            className="w-full h-12 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                                                            options={discountTypes}
+                                                        />
+                                                    </Form.Item>
+                                                </Col>
+                                            </Row>
+                                        </Card>
                                     </Col>
-                                    <Col span={24}>
-                                        <Form.Item
-                                            name="product_description"
-                                            label="Description"
-                                            rules={[{ required: true, message: 'Please enter product description' }]}
-                                        >
-                                            <Input.TextArea
-                                                rows={4}
-                                                placeholder="Describe your product in detail..."
-                                            />
-                                        </Form.Item>
+
+                                    {/* Right Column - Media & Categories */}
+                                    <Col xs={24} lg={8}>
+                                        {/* Product Media */}
+                                        <Card title="Product Media" className="mb-6 border-0 shadow-sm">
+                                            <Form.Item
+                                                name="product_image"
+                                                label="Product Image"
+                                                rules={[{ required: true, message: 'Please upload product image' }]}
+                                            >
+                                                <Upload
+                                                    listType="picture-card"
+                                                    beforeUpload={beforeUpload}
+                                                    onChange={handleImageChange}
+                                                    maxCount={1}
+                                                    className="w-full"
+                                                >
+                                                    <div className="flex flex-col items-center">
+                                                        <MdCloudUpload className="text-2xl text-gray-400 mb-2" />
+                                                        <span>Upload Image</span>
+                                                    </div>
+                                                </Upload>
+                                            </Form.Item>
+
+                                            {imagePreview && (
+                                                <div className="mt-4">
+                                                    <p className="text-sm text-gray-600 mb-2">Preview:</p>
+                                                    <img
+                                                        src={imagePreview}
+                                                        alt="Preview"
+                                                        className="w-full h-32 object-cover rounded-lg border"
+                                                    />
+                                                </div>
+                                            )}
+                                        </Card>
+
+                                        {/* Categories */}
+                                        <Card title="Categories" className="border-0 shadow-sm">
+                                            <Form.Item
+                                                name="product_category"
+                                                label="Product Category"
+                                                rules={[{ required: true, message: 'Please select category' }]}
+                                            >
+                                                <CustomSelect
+                                                    placeholder="Select category..."
+                                                    className="w-full h-12 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                                                    options={categories}
+                                                />
+                                            </Form.Item>
+
+                                            <Form.Item
+                                                name="product_tag"
+                                                label="Product Tag"
+                                                rules={[{ required: true, message: 'Please select tag' }]}
+                                            >
+                                                <CustomSelect
+                                                    placeholder="Select tag..."
+                                                    className="w-full h-12 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                                                    options={tags}
+                                                />
+                                            </Form.Item>
+                                        </Card>
                                     </Col>
                                 </Row>
-                            </Card>
 
-                            {/* Pricing */}
-                            <Card title="Pricing" className="mb-6 border-0 shadow-sm">
-                                <Row gutter={16}>
-                                    <Col xs={24} md={12}>
-                                        <Form.Item
-                                            name="product_price"
-                                            label="Base Price (₦)"
-                                            rules={[{ required: true, message: 'Please enter product price' }]}
-                                        >
-                                            <InputNumber
-                                                placeholder="0.00"
-                                                size="large"
-                                                className="w-full"
-                                                min={0}
-                                                formatter={value => `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                                                parser={value => value.replace(/₦\s?|(,*)/g, '')}
-                                            />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col xs={24} md={12}>
-                                        <Form.Item
-                                            name="product_quantity"
-                                            label="Quantity"
-                                            rules={[{ required: true, message: 'Please enter quantity' }]}
-                                        >
-                                            <InputNumber
-                                                placeholder="0"
-                                                size="large"
-                                                className="w-full"
-                                                min={0}
-                                            />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col xs={24} md={12}>
-                                        <Form.Item
-                                            name="discount_percentage"
-                                            label="Discount Percentage (%)"
-                                        >
-                                            <InputNumber
-                                                placeholder="0"
-                                                size="large"
-                                                className="w-full"
-                                                min={0}
-                                                max={100}
-                                            />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col xs={24} md={12}>
-                                        <Form.Item
-                                            name="discount_type"
-                                            label="Discount Type"
-                                        >
-                                            <CustomSelect
-                                                placeholder="Select discount type..."
-                                                className="w-full h-12 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
-                                                options={discountTypes}
-                                            />
-                                        </Form.Item>
-                                    </Col>
-                                </Row>
-                            </Card>
-                        </Col>
 
-                        {/* Right Column - Media & Categories */}
-                        <Col xs={24} lg={8}>
-                            {/* Product Media */}
-                            <Card title="Product Media" className="mb-6 border-0 shadow-sm">
-                                <Form.Item
-                                    name="product_image"
-                                    label="Product Image"
-                                    rules={[{ required: true, message: 'Please upload product image' }]}
-                                >
-                                    <Upload
-                                        listType="picture-card"
-                                        beforeUpload={beforeUpload}
-                                        onChange={handleImageChange}
-                                        maxCount={1}
-                                        className="w-full"
+
+                                {/* Submit Button */}
+                                <div className="flex justify-end gap-4 pt-6 border-t">
+                                    <Button
+                                        size="large"
+                                        onClick={() => {
+                                            form.resetFields();
+                                            setImagePreview(null);
+                                            setUploadProgress(0);
+                                        }}
                                     >
-                                        <div className="flex flex-col items-center">
-                                            <MdCloudUpload className="text-2xl text-gray-400 mb-2" />
-                                            <span>Upload Image</span>
-                                        </div>
-                                    </Upload>
-                                </Form.Item>
+                                        Reset Form
+                                    </Button>
 
-                                {imagePreview && (
-                                    <div className="mt-4">
-                                        <p className="text-sm text-gray-600 mb-2">Preview:</p>
-                                        <img
-                                            src={imagePreview}
-                                            alt="Preview"
-                                            className="w-full h-32 object-cover rounded-lg border"
-                                        />
-                                    </div>
-                                )}
-                            </Card>
-
-                            {/* Categories */}
-                            <Card title="Categories" className="border-0 shadow-sm">
-                                <Form.Item
-                                    name="product_category"
-                                    label="Product Category"
-                                    rules={[{ required: true, message: 'Please select category' }]}
-                                >
-                                    <CustomSelect
-                                        placeholder="Select category..."
-                                        className="w-full h-12 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
-                                        options={categories}
-                                    />
-                                </Form.Item>
-
-                                <Form.Item
-                                    name="product_tag"
-                                    label="Product Tag"
-                                    rules={[{ required: true, message: 'Please select tag' }]}
-                                >
-                                    <CustomSelect
-                                        placeholder="Select tag..."
-                                        className="w-full h-12 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
-                                        options={tags}
-                                    />
-                                </Form.Item>
-                            </Card>
-                        </Col>
-                    </Row>
-
-
-
-                    {/* Submit Button */}
-                    <div className="flex justify-end gap-4 pt-6 border-t">
-                        <Button
-                            size="large"
-                            onClick={() => {
-                                form.resetFields();
-                                setImagePreview(null);
-                                setUploadProgress(0);
-                            }}
-                        >
-                            Reset Form
-                        </Button>
-
-                        <Button
-                            type="primary"
-                            htmlType="submit"
-                            loading={loading}
-                            size="large"
-                            icon={<SaveOutlined />}
-                            className="bg-blue-600 hover:bg-blue-700"
-                        >
-                            {loading ? 'Adding Product...' : 'Add Product'}
-                        </Button>
-                                    </div>
-                                </Form>
+                                    <Button
+                                        type="primary"
+                                        htmlType="submit"
+                                        loading={loading}
+                                        size="large"
+                                        icon={<SaveOutlined />}
+                                        className="bg-blue-600 hover:bg-blue-700"
+                                    >
+                                        {loading ? 'Adding Product...' : 'Add Product'}
+                                    </Button>
+                                </div>
+                            </Form>
                         </div>
                     </Tabs.TabPane>
+
+                    Manage Products Tab - Commented Out *
 
                     <Tabs.TabPane
                         tab={
@@ -603,107 +629,112 @@ const Addproductpage = () => {
                         }
                         key="manage"
                     >
-                                <div className="space-y-6">
-                                    {/* Debug Info */}
-                                    <Card className="border-0 shadow-sm bg-gray-50">
-                                        <div className="text-sm">
-                                            <p><strong>Products Count:</strong> {products.length}</p>
-                                            <p><strong>Loading:</strong> {productsLoading ? 'Yes' : 'No'}</p>
-                                            <p><strong>Active Tab:</strong> {activeTab}</p>
-                                            {products.length > 0 && (
-                                                <details>
-                                                    <summary><strong>First Product Data</strong></summary>
-                                                    <pre className="mt-2 text-xs">{JSON.stringify(products[0], null, 2)}</pre>
-                                                </details>
-                                            )}
-                                        </div>
-                                    </Card>
+                        <div className="space-y-6">
+                            {/* Debug Info */}
+                            <Card className="border-0 shadow-sm bg-gray-50">
+                                <div className="text-sm">
+                                    <p><strong>Products Count:</strong> {products.length}</p>
+                                    <p><strong>Loading:</strong> {productsLoading ? 'Yes' : 'No'}</p>
+                                    <p><strong>Active Tab:</strong> {activeTab}</p>
+                                    {products.length > 0 && (
+                                        <details>
+                                            <summary><strong>First Product Data</strong></summary>
+                                            <pre className="mt-2 text-xs">{JSON.stringify(products[0], null, 2)}</pre>
+                                        </details>
+                                    )}
+                                </div>
+                            </Card>
 
-                                    {/* Products Table */}
-                                    <Card className="border-0 shadow-sm">
-                                        <Table
-                                            dataSource={products}
-                                            loading={productsLoading}
-                                            rowKey="product_id"
-                                            columns={[
-                                                {
-                                                    title: 'ID',
-                                                    dataIndex: 'product_id',
-                                                    key: 'product_id',
-                                                    width: 80
-                                                },
-                                                {
-                                                    title: 'Name',
-                                                    dataIndex: 'product_name',
-                                                    key: 'product_name',
-                                                    width: 200
-                                                },
-                                                {
-                                                    title: 'Price',
-                                                    dataIndex: 'product_price',
-                                                    key: 'product_price',
-                                                    width: 100,
-                                                    render: (price) => `₦${price}`
-                                                },
-                                                {
-                                                    title: 'Stock',
-                                                    dataIndex: 'product_quantity',
-                                                    key: 'product_quantity',
-                                                    width: 80
-                                                },
-                                                {
-                                                    title: 'Actions',
-                                                    key: 'actions',
-                                                    width: 150,
-                                                    render: (_, record) => (
-                                                        <Space>
-                                                            <Button
-                                                                type="primary"
-                                                                size="small"
-                                                                onClick={() => {
-                                                                    console.log('Edit clicked for:', record);
-                                                                    handleEditProduct(record);
-                                                                }}
-                                                            >
-                                                                Edit
-                                                            </Button>
-                                                            <Button
-                                                                type="primary"
-                                                                danger
-                                                                size="small"
-                                                                onClick={() => {
-                                                                    console.log('Delete clicked for:', record);
-                                                                    if (window.confirm('Are you sure?')) {
-                                                                        handleDeleteProduct(record.product_id);
-                                                                    }
-                                                                }}
-                                                            >
-                                                                Delete
-                                                            </Button>
-                                                        </Space>
-                                                    )
-                                                }
-                                            ]}
-                                            pagination={{
-                                                pageSize: 10,
-                                                showSizeChanger: true,
-                                                showQuickJumper: true,
-                                                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} products`
-                                            }}
-                                        />
-                                    </Card>
+                            {/* Products Table */}
+                            <Card className="border-0 shadow-sm bg-gray-50">
+                                <Table
+                                    dataSource={products}
+                                    loading={productsLoading}
+                                    rowKey="product_id"
+                                    columns={[
+                                        {
+                                            title: 'ID',
+                                            dataIndex: 'product_id',
+                                            key: 'product_id',
+                                            width: 80
+                                        },
+                                        {
+                                            title: 'Name',
+                                            dataIndex: 'product_name',
+                                            key: 'product_name',
+                                            width: 200
+                                        },
+                                        {
+                                            title: 'Price',
+                                            dataIndex: 'product_price',
+                                            key: 'product_price',
+                                            width: 100,
+                                            render: (price) => `₦${price}`
+                                        },
+                                        {
+                                            title: 'Stock',
+                                            dataIndex: 'product_quantity',
+                                            key: 'product_quantity',
+                                            width: 80
+                                        },
+                                        {
+                                            title: 'Actions',
+                                            key: 'actions',
+                                            width: 150,
+                                            render: (_, record) => (
+                                                <Space>
+                                                    <Button
+                                                        type="primary"
+                                                        size="small"
+                                                        onClick={() => {
+                                                            console.log('Edit clicked for:', record);
+                                                            handleEditProduct(record);
+                                                        }}
+                                                    >
+                                                        Edit
+                                                    </Button>
+                                                    <Button
+                                                        type="primary"
+                                                        danger
+                                                        size="small"
+                                                        onClick={() => {
+                                                            console.log('Delete clicked for:', record);
+                                                            if (window.confirm('Are you sure?')) {
+                                                                handleDeleteProduct(record.product_id);
+                                                            }
+                                                        }}
+                                                    >
+                                                        Delete
+                                                    </Button>
+                                                </Space>
+                                            )
+                                        }
+                                    ]}
+                                    pagination={{
+                                        pageSize: 10,
+                                        showSizeChanger: true,
+                                        showQuickJumper: true,
+                                        showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} products`
+                                    }}
+                                />
+                            </Card>
                         </div>
                     </Tabs.TabPane>
+                    */}
                 </Tabs>
 
                 {/* Edit Product Modal */}
                 <Modal
-                    title="Edit Product"
+                    title={`Edit Product: ${editingProduct?.product_name || ''}`}
                     open={isEditModalVisible}
                     onCancel={handleCancelEdit}
                     footer={null}
                     width={800}
-                    destroyOnClose
+                    destroyOnClose={false}
+                    maskClosable={false}
+                    centered
+                    zIndex={1000}
+                    className="edit-product-modal"
                 >
                     <Form
                         form={form}
@@ -757,7 +788,63 @@ const Addproductpage = () => {
                             </Col>
                         </Row>
 
-                        <div className="flex justify-end space-x-2 pt-4">
+                        <Row gutter={[16, 16]}>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label="Category"
+                                    name="product_category"
+                                    rules={[{ required: true, message: 'Please select category' }]}
+                                >
+                                    <Select placeholder="Select category">
+                                        <Option value="RINGS">Rings</Option>
+                                        <Option value="NECKLACES">Necklaces</Option>
+                                        <Option value="BRACELETS">Bracelets</Option>
+                                        <Option value="EARRINGS">Earrings</Option>
+                                        <Option value="WATCHES">Watches</Option>
+                                        <Option value="PENDANTS">Pendants</Option>
+                                    </Select>
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label="Product Tag"
+                                    name="product_tag"
+                                >
+                                    <Input placeholder="Enter product tag (optional)" />
+                                </Form.Item>
+                            </Col>
+                        </Row>
+
+                        <Row gutter={[16, 16]}>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label="Discount Type"
+                                    name="discount_type"
+                                >
+                                    <Select placeholder="Select discount type">
+                                        <Option value="none">No Discount</Option>
+                                        <Option value="percentage">Percentage</Option>
+                                        <Option value="fixed">Fixed Amount</Option>
+                                    </Select>
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label="Discount Percentage (%)"
+                                    name="discount_percentage"
+                                >
+                                    <InputNumber
+                                        min={0}
+                                        max={100}
+                                        step={0.1}
+                                        placeholder="0"
+                                        className="w-full"
+                                    />
+                                </Form.Item>
+                            </Col>
+                        </Row>
+
+                        <div className="flex justify-end gap-2 pt-4">
                             <Button onClick={handleCancelEdit}>
                                 Cancel
                             </Button>
@@ -765,7 +852,7 @@ const Addproductpage = () => {
                                 type="primary"
                                 htmlType="submit"
                                 loading={loading}
-                                icon={<SaveOutlined />}
+                                className="bg-blue-600 hover:bg-blue-700"
                             >
                                 Update Product
                             </Button>

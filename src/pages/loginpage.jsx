@@ -6,7 +6,7 @@ import { MdEmail, MdLock, MdVisibility, MdVisibilityOff, MdAdminPanelSettings } 
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API || 'http://localhost:8888';
+const API_URL = import.meta.env.VITE_API || 'http://localhost:9000';
 
 function Loginpage() {
     const [loading, setLoading] = useState(false);
